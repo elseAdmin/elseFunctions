@@ -10,18 +10,18 @@ exports.parkingSensorEventListenerUnityOneRohini = functions.database.ref('/unit
 
       var afterValueMap = new Map();
       snapshot.after.forEach((child) => {
-        model = new SensorModel(child.val().major,child.val().minor,child.val().name,child.val().updatedAt,child.val().userUid,child.val().value);
+        model = new SensorModel(child.val().major,child.val().minor,child.val().name,child.val().updatedAt,child.val().userUid,child.val().value,child.val().slot);
         afterValueMap.set(child.val().name,model);
       });
 
       var beforeValueMap = new Map();
       snapshot.before.forEach((child) => {
-        model = new SensorModel(child.val().major,child.val().minor,child.val().name,child.val().updatedAt,child.val().userUid,child.val().value);
+        model = new SensorModel(child.val().major,child.val().minor,child.val().name,child.val().updatedAt,child.val().userUid,child.val().value,child.val().slot);
         beforeValueMap.set(child.val().name,model);
       });
-
       getChangedSensors(beforeValueMap,afterValueMap);
   return true;
+
 });
 
 function getChangedSensors(beforeValueMap,afterValueMap){
@@ -33,7 +33,6 @@ function getChangedSensors(beforeValueMap,afterValueMap){
     }
   });
   console.log('changed sensor map ',changedSensors);
-
   changedSensors.forEach((child)=>{
     if(child.value===1){
       getBeaconData(child);
@@ -112,7 +111,6 @@ function identifyUser(userVsVisitsMap,sensor){
     });
 }
 
-
 function compareSensorData(beforeData, afterData){
     if(afterData.value === beforeData.value){
       return false;
@@ -121,12 +119,13 @@ function compareSensorData(beforeData, afterData){
 }
 
 class SensorModel{
-  constructor(major,minor,name,updatedAt,userUid,value){
+  constructor(major,minor,name,updatedAt,userUid,value,slot){
     this.major=major;
     this.minor=minor;
     this.name=name;
     this.updatedAt=updatedAt;
     this.userUid=userUid;
     this.value=value;
+    this.slot=slot;
   }
 }
