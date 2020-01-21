@@ -99,16 +99,16 @@ function identifyUser(userVsVisitsMap,sensor){
       }
     });
     console.log('identified user ',user);
-    realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'userUid':user}); //,'updatedAt':Date.now()
-    //stamp proxi details to user at firestore
     firestore.collection(`users/${user}/parking`).add({
       'major': sensor.major,
       'minor':sensor.minor,
       'proxiName':sensor.name,
       'parkingInTime':Date.now(),
       'parkingOutTime':0,
-      'status':'active'
+      'status':'active',
+      'universe':'unityOneRohini'
     });
+    realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'userUid':user}); //,'updatedAt':Date.now()
 }
 
 function compareSensorData(beforeData, afterData){
