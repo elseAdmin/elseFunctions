@@ -19,9 +19,8 @@ exports.parkingSensorEventListenerUnityOneRohini = functions.database.ref('/unit
         model = new SensorModel(child.val().major,child.val().minor,child.val().name,child.val().updatedAt,child.val().userUid,child.val().value,child.val().slot);
         beforeValueMap.set(child.val().name,model);
       });
-      getChangedSensors(beforeValueMap,afterValueMap);
-  return true;
-
+       getChangedSensors(beforeValueMap,afterValueMap);
+       return true;
 });
 
 function getChangedSensors(beforeValueMap,afterValueMap){
@@ -32,16 +31,17 @@ function getChangedSensors(beforeValueMap,afterValueMap){
       changedSensors.set(afterValueMap.get(child.name).name,afterValueMap.get(child.name));
     }
   });
-  console.log('changed sensor map ',changedSensors);
   changedSensors.forEach((child)=>{
     if(child.value===1){
+      console.log('slot ',child.slot,' toggled to 1');
       getBeaconData(child);
-    }else{
+    }else if(child.value===0){
+      console.log('slot ',child.slot,' toggled to 0');
       //clear beacon visits and mark user at proxi as none;
       //do we really need to clear this data ?
-      if(child.userUid !== undefined){
+      console.log('slot ',child.slot,' has user = ',child.userUid);
+      if(child.userUid !== undefined && child.userUid !== 'none'){
         var user = child.userUid;
-        console.log('user stamped at sensor',user);
         firestore.collection(`users/${user}/parking`).where('status','==','active')
           .get()
           .then((querySnapshot) => {
@@ -57,7 +57,7 @@ function getChangedSensors(beforeValueMap,afterValueMap){
             console.log(reason);
         });
       }
-      realtimeDb.ref('/unityOneRohini/parking').child(child.name).update({'userUid':'none'});
+    realtimeDb.ref('/unityOneRohini/parking').child(child.name).update({'userUid':'none','updatedAt':Date.now()});
     }
   });
   return true;
@@ -81,10 +81,10 @@ function getBeaconData(sensor){
             userVsVisitsMap.set(data.userUid,avgDist);
           }
         });
-       identifyUser(userVsVisitsMap,sensor);
+     identifyUser(userVsVisitsMap,sensor);
        return '';
     }).catch(reason => {
-        console.log(reason);
+        console.log('error at getBeaconData',reason);
     });
 }
 
@@ -98,7 +98,9 @@ function identifyUser(userVsVisitsMap,sensor){
         user = key;
       }
     });
-    console.log('identified user ',user);
+
+    if(user !== undefined){
+    console.log('identified user = ',user,'for slot ',sensor.slot);
     firestore.collection(`users/${user}/parking`).add({
       'major': sensor.major,
       'minor':sensor.minor,
@@ -108,7 +110,11 @@ function identifyUser(userVsVisitsMap,sensor){
       'status':'active',
       'universe':'unityOneRohini'
     });
-    realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'userUid':user}); //,'updatedAt':Date.now()
+   realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'userUid':user,'updatedAt':Date.now()});
+ }else{
+   console.log('no user identified for slot ',sensor.slot);
+   realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'updatedAt':Date.now()});
+ }
 }
 
 function compareSensorData(beforeData, afterData){
