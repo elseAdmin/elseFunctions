@@ -57,7 +57,7 @@ function getChangedSensors(beforeValueMap,afterValueMap){
             console.log(reason);
         });
       }
-    realtimeDb.ref('/unityOneRohini/parking').child(child.name).update({'userUid':'none','updatedAt':Date.now()});
+    realtimeDb.ref('/unityOneRohini/parking').child(child.name).update({'userUid':'none'});//,'updatedAt':Date.now()});
     }
   });
   return true;
@@ -70,7 +70,7 @@ function getBeaconData(sensor){
    var path = `unityOneRohini/beacons/parking/${major}/${minor}/`;
    var userVsVisitsMap = new Map();
    //below query will fetch all the visits for the parking beacon that are marked in future in reference to the updated at time of the proxi sensor
-   firestore.collection(path).where('timestamp',">=",updatedAt).get().then(collections => {
+   firestore.collection(path).where('timestamp',">=",updatedAt*1000).get().then(collections => {
         collections.forEach((child) => {
           data = child.data();
           if(userVsVisitsMap.get(data.userUid) === undefined){
@@ -110,10 +110,10 @@ function identifyUser(userVsVisitsMap,sensor){
       'status':'active',
       'universe':'unityOneRohini'
     });
-   realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'userUid':user,'updatedAt':Date.now()});
+   realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'userUid':user});
  }else{
    console.log('no user identified for slot ',sensor.slot);
-   realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'updatedAt':Date.now()});
+   //realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'updatedAt':Date.now()});
  }
 }
 
