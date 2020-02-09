@@ -62,22 +62,22 @@ function getChangedSensors(beforeValueMap,afterValueMap){
   });
   return true;
 }
-
 function getBeaconData(sensor){
    var major = sensor.major;
    var minor = sensor.minor;
-   var updatedAt = sensor.updatedAt;
+   var updatedAt = ((sensor.updatedAt -2)*1000);
    var path = `unityOneRohini/beacons/parking/${major}/${minor}/`;
    var userVsVisitsMap = new Map();
    //below query will fetch all the visits for the parking beacon that are marked in future in reference to the updated at time of the proxi sensor
-   firestore.collection(path).where('timestamp',">=",updatedAt*1000).get().then(collections => {
+   firestore.collection(path).where('timestamp',">=",updatedAt).get().then(collections => { // fetch beacon readings for 2 sec prior sensor updatedAt
         collections.forEach((child) => {
           data = child.data();
+          console.log(data);
           if(userVsVisitsMap.get(data.userUid) === undefined){
-            userVsVisitsMap.set(data.userUid,data.distance);
+            userVsVisitsMap.set(data.userUid,data.rssi);
           }else{
             var avgDist = userVsVisitsMap.get(data.userUid);
-            avgDist = (avgDist + data.distance)/2;
+            avgDist = (avgDist + data.rssi)/2;
             userVsVisitsMap.set(data.userUid,avgDist);
           }
         });
@@ -93,6 +93,7 @@ function identifyUser(userVsVisitsMap,sensor){
   var maxDist = 1000;
   var user;
     userVsVisitsMap.forEach((value, key)=>{
+      console.log("user map value ",value);
       if(value<maxDist){
         maxDist = value;
         user = key;
