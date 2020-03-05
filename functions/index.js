@@ -5,6 +5,50 @@ admin.initializeApp();
 const firestore = admin.firestore();
 const realtimeDb = admin.database();
 
+var userSlotMap = new Map();
+var userVisitMap = new Map();
+
+exports.userVisitEventListenerUnityOneRohini = functions.firestore
+    .document('/unityOneRohini/beacons/monitoring/{major}/{minor}/{doc}')
+    .onCreate((snap, context) => {
+      const newValue = snap.data();
+      var major = context.params.major;
+      var minor = context.params.minor;
+      var currDateString = getCurrentDateString();
+      if(userVisitMap.has(currDateString)){
+        var majorMinorMap = userVisitMap.get(currDateString);
+        if(majorMinorMap.has(major.toString()+minor.toString())){
+           majorMinorMap.get(major.toString()+minor.toString()).add(newValue.userUid);
+        }else{
+          var userList = new Set();
+          userList.add(newValue.userUid);
+          majorMinorMap.set(major.toString()+minor.toString(),userList);
+        }
+      }else{
+        var newMajorMinorMap = new Map();
+        var newUserList = new Set();
+        newUserList.add(newValue.userUid);
+        newMajorMinorMap.set(major.toString()+minor.toString(),newUserList);
+        userVisitMap.set(currDateString,newMajorMinorMap);
+      }
+      console.log(userVisitMap);
+      //firestore.collection(`unityOneRohini/beacons/monitoring/${major}/currDateString`).add({
+    //    'users':admin.firestore.FieldValue.arrayUnion('greater'),
+    //  });
+
+      return true;
+    });
+
+function getCurrentDateString(){
+  var currDate = new Date();
+  return currDate.getDate().toString()+(currDate.getMonth()+1).toString()+currDate.getFullYear().toString();
+}
+
+
+              ////////////////////////
+              ////////////////////////
+
+
 exports.parkingSensorEventListenerUnityOneRohini = functions.database.ref('/unityOneRohini/parking')
     .onWrite((snapshot, context) => {
 
@@ -37,11 +81,10 @@ function getChangedSensors(beforeValueMap,afterValueMap){
       getBeaconData(child);
     }else if(child.value===0){
       console.log('slot ',child.slot,' toggled to 0');
-      //clear beacon visits and mark user at proxi as none;
-      //do we really need to clear this data ?
-      console.log('slot ',child.slot,' has user = ',child.userUid);
+      console.log('slot ',child.slot,' had user = ',child.userUid);
       if(child.userUid !== undefined && child.userUid !== 'none'){
         var user = child.userUid;
+        userSlotMap.delete(child.userUid);
         firestore.collection(`users/${user}/parking`).where('status','==','active')
           .get()
           .then((querySnapshot) => {
@@ -102,6 +145,10 @@ function identifyUser(userVsVisitsMap,sensor){
 
     if(user !== undefined){
     console.log('identified user = ',user,'for slot ',sensor.slot);
+    if(userSlotMap.has(user)){
+      console.log('user = ',user,' identified for multiple slots, ',userSlotMap.get(user),' and ',sensor.slot);
+    }else{
+    userSlotMap.set(user,sensor.slot);
     firestore.collection(`users/${user}/parking`).add({
       'major': sensor.major,
       'minor':sensor.minor,
@@ -112,9 +159,9 @@ function identifyUser(userVsVisitsMap,sensor){
       'universe':'unityOneRohini'
     });
    realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'userUid':user});
+ }
  }else{
    console.log('no user identified for slot ',sensor.slot);
-   //realtimeDb.ref('/unityOneRohini/parking').child(sensorName).update({'updatedAt':Date.now()});
  }
 }
 
