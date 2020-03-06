@@ -14,8 +14,9 @@ exports.userVisitEventListenerUnityOneRohini = functions.firestore
       const newValue = snap.data();
       var major = context.params.major;
       var minor = context.params.minor;
+      var key = major.toString()+minor.toString();
       var currDateString = getCurrentDateString();
-      if(userVisitMap.has(currDateString)){
+    /*  if(userVisitMap.has(currDateString)){
         var majorMinorMap = userVisitMap.get(currDateString);
         if(majorMinorMap.has(major.toString()+minor.toString())){
            majorMinorMap.get(major.toString()+minor.toString()).add(newValue.userUid);
@@ -30,12 +31,12 @@ exports.userVisitEventListenerUnityOneRohini = functions.firestore
         newUserList.add(newValue.userUid);
         newMajorMinorMap.set(major.toString()+minor.toString(),newUserList);
         userVisitMap.set(currDateString,newMajorMinorMap);
-      }
-      console.log(userVisitMap);
-      //firestore.collection(`unityOneRohini/beacons/monitoring/${major}/currDateString`).add({
-    //    'users':admin.firestore.FieldValue.arrayUnion('greater'),
-    //  });
-
+      }*/
+      //console.log(userVisitMap);
+      firestore.collection(`unityOneRohini/analytics/userVisits/${major}/${minor}`).doc(`${currDateString}`).set({
+        'users':admin.firestore.FieldValue.arrayUnion(newValue.userUid),
+      },{merge:true});
+//
       return true;
     });
 
